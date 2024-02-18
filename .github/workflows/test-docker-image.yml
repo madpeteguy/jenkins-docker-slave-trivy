@@ -16,18 +16,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
       - name: Collect docker meta
         id: docker-metadata
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: madpeteguy/jenkins-docker-slave-trivy
       - name: Build docker image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: .
           outputs: type=docker
@@ -36,7 +36,7 @@ jobs:
       - name: Save docker image
         run: docker save -o docker-image.tar madpeteguy/jenkins-docker-slave-trivy:test
       - name: Upload docker-image.tar
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: docker-image
           path: docker-image.tar
@@ -48,7 +48,7 @@ jobs:
     needs: build-docker-image
     steps:
       - name: Download docker-image.tar
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: docker-image
       - name: Load images
@@ -65,6 +65,6 @@ jobs:
     needs: [ build-docker-image, test-docker-image ]
     steps:
       - name: Cleanup docker-image.tar
-        uses: geekyeggo/delete-artifact@v2
+        uses: geekyeggo/delete-artifact@v4
         with:
           name: docker-image
