@@ -72,18 +72,23 @@ def main(argv):
     json_data = load_json(json_path)
     tss = xml_testsuites('Trivy')
     for json_result in json_data['Results']:
-        json_vulns = json_result['Vulnerabilities']
-        ts = xml_testsuite(tss, json_result['Target'], str(len(json_vulns)), str(len(json_vulns)),
+        json_vulns = None
+        json_vulns_count = 0
+        if 'Vulnerabilities' in json_result:
+            json_vulns = json_result['Vulnerabilities']
+            json_vulns_count = len(json_vulns)
+        ts = xml_testsuite(tss, json_result['Target'], str(json_vulns_count), str(json_vulns_count),
                            json_data['CreatedAt'])
         xml_properties(ts, json_result['Type'])
-        for json_vuln in json_vulns:
-            name = "[{0}] {1}".format(json_vuln['Severity'], json_vuln['VulnerabilityID'])
-            classname = "{0}-{1}".format(json_vuln['PkgName'], json_vuln['InstalledVersion'])
-            tc = xml_testcase(ts, name, classname)
-            title = ''
-            if 'Title' in json_vuln:
-                title = json_vuln['Title']
-            xml_failure(tc, title, json_vuln['Description'])
+        if json_vulns is not None:
+            for json_vuln in json_vulns:
+                name = "[{0}] {1}".format(json_vuln['Severity'], json_vuln['VulnerabilityID'])
+                classname = "{0}-{1}".format(json_vuln['PkgName'], json_vuln['InstalledVersion'])
+                tc = xml_testcase(ts, name, classname)
+                title = ''
+                if 'Title' in json_vuln:
+                    title = json_vuln['Title']
+                xml_failure(tc, title, json_vuln['Description'])
     print(f"Save {xml_path}")
     (Path.cwd() / os.path.dirname(xml_path)).mkdir(parents=True, exist_ok=True)
     xml_file = open(xml_path, "w", encoding="utf-8")
