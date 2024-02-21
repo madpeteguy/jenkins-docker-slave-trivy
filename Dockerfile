@@ -15,7 +15,7 @@ RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/
     curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl > contrib/html.tpl && \
     curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/junit.tpl > contrib/junit.tpl
 
-COPY imgdata .
+COPY imgdata /opt
 
 EXPOSE 22
 
