@@ -7,11 +7,82 @@ from xml.dom.minidom import Document
 __xml_document = Document()
 
 
+def main(argv):
+    json_path, xml_path = parse_args(argv)
+    print(f"Load {json_path}")
+    json_data = load_json(json_path)
+    build_xml(json_data)
+    print(f"Save {xml_path}")
+    save_xml(xml_path)
+
+
+def parse_args(argv):
+    assert len(argv) >= 2, f"{len(argv)} Usage {os.path.basename(argv[0])} source.json [target.xml]"
+    json_path = argv[1]
+    if len(argv) >= 3:
+        xml_path = argv[2]
+    else:
+        xml_path = json_path.rsplit(".", 1)[0] + ".xml"
+    return json_path, xml_path
+
+
 def load_json(path):
     f = open(path, "r", encoding="utf-8")
     data = json.load(f)
     f.close()
     return data
+
+
+def build_xml(json_data):
+    tss = xml_testsuites('Trivy')
+    if 'Results' in json_data:
+        for json_result in json_data['Results']:
+            build_result(json_data, json_result, tss)
+
+
+def build_result(json_data, json_result, tss):
+    v_count = 0
+    json_vulns = None
+    json_secrets = None
+    if 'Vulnerabilities' in json_result:
+        json_vulns = json_result['Vulnerabilities']
+        v_count += len(json_vulns)
+    if 'Secrets' in json_result:
+        json_secrets = json_result['Secrets']
+        v_count += len(json_secrets)
+    name = json_result['Target']
+    time = json_data['CreatedAt']
+    ts = xml_testsuite(tss, name, str(v_count), str(v_count), time)
+    name = ''
+    if 'Type' in json_result:
+        name = json_result['Type']
+    else:
+        name = json_result['Class']
+    xml_properties(ts, name)
+    if json_vulns is not None:
+        for json_vuln in json_vulns:
+            build_vuln(json_vuln, ts)
+    if json_secrets is not None:
+        for json_secret in json_secrets:
+            build_secret(json_secret, ts)
+
+
+def build_vuln(json_vuln, ts):
+    name = "[{0}] {1}".format(json_vuln['Severity'], json_vuln['VulnerabilityID'])
+    classname = "{0}-{1}".format(json_vuln['PkgName'], json_vuln['InstalledVersion'])
+    tc = xml_testcase(ts, name, classname)
+    title = 'Title' in json_vuln and json_vuln['Title'] or ''
+    description = 'Description' in json_vuln and json_vuln['Description'] or ''
+    xml_failure(tc, title, description)
+
+
+def build_secret(json_secret, ts):
+    name = "[{0}] {1}".format(json_secret['Severity'], json_secret['RuleID'])
+    classname = json_secret['Category']
+    tc = xml_testcase(ts, name, classname)
+    title = 'Title' in json_secret and json_secret['Title'] or ''
+    description = 'Match' in json_secret and json_secret['Match'] or ''
+    xml_failure(tc, title, description)
 
 
 def xml_testsuites(name):
@@ -61,34 +132,7 @@ def xml_failure(testcase, message, description):
     return failure
 
 
-def main(argv):
-    assert len(argv) >= 2, f"{len(argv)} Usage {os.path.basename(argv[0])} source.json [target.xml]"
-    json_path = argv[1]
-    if len(argv) >= 3:
-        xml_path = argv[2]
-    else:
-        xml_path = json_path.rsplit(".", 1)[0] + ".xml"
-    print(f"Load {json_path}")
-    json_data = load_json(json_path)
-    tss = xml_testsuites('Trivy')
-    for json_result in json_data['Results']:
-        json_vulns = None
-        json_vulns_count = 0
-        if 'Vulnerabilities' in json_result:
-            json_vulns = json_result['Vulnerabilities']
-            json_vulns_count = len(json_vulns)
-        ts = xml_testsuite(tss, json_result['Target'], str(json_vulns_count), str(json_vulns_count),
-                           json_data['CreatedAt'])
-        xml_properties(ts, json_result['Type'])
-        if json_vulns is not None:
-            for json_vuln in json_vulns:
-                name = "[{0}] {1}".format(json_vuln['Severity'], json_vuln['VulnerabilityID'])
-                classname = "{0}-{1}".format(json_vuln['PkgName'], json_vuln['InstalledVersion'])
-                tc = xml_testcase(ts, name, classname)
-                title = 'Title' in json_vuln and json_vuln['Title'] or ''
-                description = 'Description' in json_vuln and json_vuln['Description'] or ''
-                xml_failure(tc, title, description)
-    print(f"Save {xml_path}")
+def save_xml(xml_path):
     (Path.cwd() / os.path.dirname(xml_path)).mkdir(parents=True, exist_ok=True)
     xml_file = open(xml_path, "w", encoding="utf-8")
     __xml_document.writexml(xml_file, encoding="utf-8", newl="\n", addindent='    ')
