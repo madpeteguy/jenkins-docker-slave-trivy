@@ -41,21 +41,30 @@ def build_xml(json_data):
 
 
 def build_result(json_data, json_result, tss):
+    v_count = 0
     json_vulns = None
-    json_vulns_count = 0
+    json_secrets = None
     if 'Vulnerabilities' in json_result:
         json_vulns = json_result['Vulnerabilities']
-        json_vulns_count = len(json_vulns)
-    ts = xml_testsuite(
-        tss,
-        json_result['Target'],
-        str(json_vulns_count),
-        str(json_vulns_count),
-        json_data['CreatedAt'])
-    xml_properties(ts, json_result['Type'])
+        v_count += len(json_vulns)
+    if 'Secrets' in json_result:
+        json_secrets = json_result['Secrets']
+        v_count += len(json_secrets)
+    name = json_result['Target']
+    time = json_data['CreatedAt']
+    ts = xml_testsuite(tss, name, str(v_count), str(v_count), time)
+    name = ''
+    if 'Type' in json_result:
+        name = json_result['Type']
+    else:
+        name = json_result['Class']
+    xml_properties(ts, name)
     if json_vulns is not None:
         for json_vuln in json_vulns:
             build_vuln(json_vuln, ts)
+    if json_secrets is not None:
+        for json_secret in json_secrets:
+            build_secret(json_secret, ts)
 
 
 def build_vuln(json_vuln, ts):
@@ -64,6 +73,15 @@ def build_vuln(json_vuln, ts):
     tc = xml_testcase(ts, name, classname)
     title = 'Title' in json_vuln and json_vuln['Title'] or ''
     description = 'Description' in json_vuln and json_vuln['Description'] or ''
+    xml_failure(tc, title, description)
+
+
+def build_secret(json_secret, ts):
+    name = "[{0}] {1}".format(json_secret['Severity'], json_secret['RuleID'])
+    classname = json_secret['Category']
+    tc = xml_testcase(ts, name, classname)
+    title = 'Title' in json_secret and json_secret['Title'] or ''
+    description = 'Match' in json_secret and json_secret['Match'] or ''
     xml_failure(tc, title, description)
 
 
