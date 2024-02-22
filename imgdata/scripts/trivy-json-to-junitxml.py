@@ -85,10 +85,9 @@ def main(argv):
                 name = "[{0}] {1}".format(json_vuln['Severity'], json_vuln['VulnerabilityID'])
                 classname = "{0}-{1}".format(json_vuln['PkgName'], json_vuln['InstalledVersion'])
                 tc = xml_testcase(ts, name, classname)
-                title = ''
-                if 'Title' in json_vuln:
-                    title = json_vuln['Title']
-                xml_failure(tc, title, json_vuln['Description'])
+                title = 'Title' in json_vuln and json_vuln['Title'] or ''
+                description = 'Description' in json_vuln and json_vuln['Description'] or ''
+                xml_failure(tc, title, description)
     print(f"Save {xml_path}")
     (Path.cwd() / os.path.dirname(xml_path)).mkdir(parents=True, exist_ok=True)
     xml_file = open(xml_path, "w", encoding="utf-8")
