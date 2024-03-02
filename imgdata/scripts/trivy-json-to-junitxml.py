@@ -69,26 +69,51 @@ def build_result(json_data, json_result, tss):
 
 def build_vuln(json_vuln, ts):
     severity = json_vuln['Severity']
-    name = "[{0}] {1}".format(severity, json_vuln['VulnerabilityID'])
-    classname = "{0}-{1}".format(json_vuln['PkgName'], json_vuln['InstalledVersion'])
+    name = "{0} [{1}]".format(json_vuln['VulnerabilityID'], severity)
+    classname = "{0}.{1}".format(json_vuln['PkgName'], json_vuln['InstalledVersion'].replace('.', '_'))
     tc = xml_testcase(ts, name, classname)
     title = 'Title' in json_vuln and json_vuln['Title'] or ''
     description = 'Description' in json_vuln and json_vuln['Description'] or ''
-    if severity == 'LOW':
-        xml_result(tc, title, description, "skipped")
-    elif severity == 'UNKNOWN':
-        xml_result(tc, title, description, "error")
-    else:
-        xml_result(tc, title, description)
+    build_testcase_content(tc, severity, description, title)
 
 
 def build_secret(json_secret, ts):
-    name = "[{0}] {1}".format(json_secret['Severity'], json_secret['RuleID'])
-    classname = json_secret['Category']
+    severity = json_secret['Severity']
+    name = "{0} [{1}]".format(json_secret['RuleID'], json_secret['Severity'])
+    classname = "Secrets.{0}".format(json_secret['Category'])
     tc = xml_testcase(ts, name, classname)
     title = 'Title' in json_secret and json_secret['Title'] or ''
     description = 'Match' in json_secret and json_secret['Match'] or ''
-    xml_result(tc, title, description)
+    build_testcase_content(tc, severity, title, description)
+
+
+def build_testcase_content(testcase, severity, title, description):
+    severity_type = pick_type_by_severity(severity)
+    if severity_type == 'error':
+        xml_error(testcase, title, description)
+    elif severity_type == 'failure':
+        xml_failure(testcase, title, description)
+    elif severity_type == 'skipped':
+        xml_skipped(testcase, title)
+        xml_systemerr(testcase, description)
+    elif severity_type == 'passed':
+        xml_systemout(testcase, title)
+        xml_systemerr(testcase, description)
+    else:
+        raise RuntimeError(f"Unknown severity type \"{severity_type}\"")
+
+
+def pick_type_by_severity(severity):
+    if severity == 'CRITICAL' or severity == 'HIGH':
+        return 'failure'
+    elif severity == 'MEDIUM':
+        return 'skipped'
+    elif severity == 'LOW':
+        return 'passed'
+    elif severity == 'UNKNOWN':
+        return 'error'
+    else:
+        raise RuntimeError(f"Unknown severity {severity}")
 
 
 def xml_testsuites(name):
@@ -98,13 +123,13 @@ def xml_testsuites(name):
     return testsuites
 
 
-def xml_testsuite(testsuites, name, tests=None, failures=None, time=None):
+def xml_testsuite(testsuites, name, tests=None, failures=None, skipped=None, errors=None, time=None):
     testsuite = __xml_document.createElement("testsuite")
+    testsuite.setAttribute('name', name)
     testsuite.setAttribute('tests', tests)
     testsuite.setAttribute('failures', failures)
-    testsuite.setAttribute('name', name)
-    testsuite.setAttribute('errors', '0')
-    testsuite.setAttribute('skipped', '0')
+    testsuite.setAttribute('errors', errors)
+    testsuite.setAttribute('skipped', skipped)
     testsuite.setAttribute('time', '')
     testsuites.appendChild(testsuite)
     return testsuite
@@ -129,19 +154,43 @@ def xml_testcase(testsuite, name, classname):
     return testcase
 
 
-def xml_result(testcase, message, description, result_tag="failure"):
-    result = __xml_document.createElement(result_tag)
-    result.setAttribute('message', message)
-    result.setAttribute('type', 'description')
-    result.appendChild(__xml_document.createTextNode(description))
-    testcase.appendChild(result)
+def xml_skipped(testcase, message):
+    skipped = __xml_document.createElement("failure")
+    skipped.setAttribute('message', message)
+    testcase.appendChild(skipped)
+    return skipped
+
+
+def xml_error(testcase, message, description):
+    error = __xml_document.createElement("error")
+    error.setAttribute('message', message)
+    error.setAttribute('type', 'description')
+    error.appendChild(__xml_document.createTextNode(description))
+    testcase.appendChild(error)
+    return error
+
+
+def xml_failure(testcase, message, description):
+    failure = __xml_document.createElement("failure")
+    failure.setAttribute('message', message)
+    failure.setAttribute('type', 'description')
+    failure.appendChild(__xml_document.createTextNode(description))
+    testcase.appendChild(failure)
+    return failure
+
+
+def xml_systemout(testcase, message):
     systemout = __xml_document.createElement("system-out")
-    systemout.appendChild(__xml_document.createTextNode(description))
+    systemout.appendChild(__xml_document.createTextNode(message))
     testcase.appendChild(systemout)
+    return systemout
+
+
+def xml_systemerr(testcase, message):
     systemerr = __xml_document.createElement("system-err")
     systemerr.appendChild(__xml_document.createTextNode(message))
     testcase.appendChild(systemerr)
-    return result
+    return systemerr
 
 
 def save_xml(xml_path):
