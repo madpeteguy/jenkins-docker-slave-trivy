@@ -155,7 +155,7 @@ def xml_testcase(testsuite, name, classname):
 
 
 def xml_skipped(testcase, message):
-    skipped = __xml_document.createElement("failure")
+    skipped = __xml_document.createElement("skipped")
     skipped.setAttribute('message', message)
     testcase.appendChild(skipped)
     return skipped
