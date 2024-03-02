@@ -74,7 +74,7 @@ def build_vuln(json_vuln, ts):
     tc = xml_testcase(ts, name, classname)
     title = 'Title' in json_vuln and json_vuln['Title'] or ''
     description = 'Description' in json_vuln and json_vuln['Description'] or ''
-    build_testcase_content(tc, severity, description, title)
+    build_testcase_content(tc, severity, title, description)
 
 
 def build_secret(json_secret, ts):
