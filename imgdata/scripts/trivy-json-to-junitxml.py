@@ -68,12 +68,18 @@ def build_result(json_data, json_result, tss):
 
 
 def build_vuln(json_vuln, ts):
-    name = "[{0}] {1}".format(json_vuln['Severity'], json_vuln['VulnerabilityID'])
+    severity = json_vuln['Severity']
+    name = "[{0}] {1}".format(severity, json_vuln['VulnerabilityID'])
     classname = "{0}-{1}".format(json_vuln['PkgName'], json_vuln['InstalledVersion'])
     tc = xml_testcase(ts, name, classname)
     title = 'Title' in json_vuln and json_vuln['Title'] or ''
     description = 'Description' in json_vuln and json_vuln['Description'] or ''
-    xml_failure(tc, title, description)
+    if severity == 'LOW':
+        xml_result(tc, title, description, "skipped")
+    elif severity == 'UNKNOWN':
+        xml_result(tc, title, description, "error")
+    else:
+        xml_result(tc, title, description)
 
 
 def build_secret(json_secret, ts):
@@ -82,7 +88,7 @@ def build_secret(json_secret, ts):
     tc = xml_testcase(ts, name, classname)
     title = 'Title' in json_secret and json_secret['Title'] or ''
     description = 'Match' in json_secret and json_secret['Match'] or ''
-    xml_failure(tc, title, description)
+    xml_result(tc, title, description)
 
 
 def xml_testsuites(name):
@@ -123,13 +129,19 @@ def xml_testcase(testsuite, name, classname):
     return testcase
 
 
-def xml_failure(testcase, message, description):
-    failure = __xml_document.createElement("failure")
-    failure.setAttribute('message', message)
-    failure.setAttribute('type', 'description')
-    failure.appendChild(__xml_document.createTextNode(description))
-    testcase.appendChild(failure)
-    return failure
+def xml_result(testcase, message, description, result_tag="failure"):
+    result = __xml_document.createElement(result_tag)
+    result.setAttribute('message', message)
+    result.setAttribute('type', 'description')
+    result.appendChild(__xml_document.createTextNode(description))
+    testcase.appendChild(result)
+    systemout = __xml_document.createElement("system-out")
+    systemout.appendChild(__xml_document.createTextNode(description))
+    testcase.appendChild(systemout)
+    systemerr = __xml_document.createElement("system-err")
+    systemerr.appendChild(__xml_document.createTextNode(message))
+    testcase.appendChild(systemerr)
+    return result
 
 
 def save_xml(xml_path):
