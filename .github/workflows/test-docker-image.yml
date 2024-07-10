@@ -27,7 +27,7 @@ jobs:
         with:
           images: madpeteguy/jenkins-docker-slave-trivy
       - name: Build docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           outputs: type=docker
