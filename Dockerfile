@@ -12,6 +12,10 @@ RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/
 
 COPY imgdata /opt
 
+ENV TRIVY_CACHE_DIR=/trivy_cahe
+
+VOLUME ["$TRIVY_CACHE_DIR"]
+
 EXPOSE 22
 
 CMD ["/usr/sbin/sshd", "-D"]
