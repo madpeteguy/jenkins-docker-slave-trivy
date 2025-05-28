@@ -56,11 +56,11 @@ jobs:
       - name: Test container up
         run: docker run --rm madpeteguy/jenkins-docker-slave-trivy:test hostname
       - name: Test python3 version
-        run: docker run --rm -p 127.0.0.1:9924:22/tcp madpeteguy/jenkins-docker-slave-trivy:test sh -c "python3 --version"
+        run: docker run --rm madpeteguy/jenkins-docker-slave-trivy:test sh -c "python3 --version"
       - name: Test trivy version
-        run: docker run --rm -p 127.0.0.1:9924:22/tcp madpeteguy/jenkins-docker-slave-trivy:test sh -c "trivy --version"
+        run: docker run --rm madpeteguy/jenkins-docker-slave-trivy:test sh -c "trivy --version"
       - name: Test trivy image
-        run: docker run --rm -p 127.0.0.1:9924:22/tcp madpeteguy/jenkins-docker-slave-trivy:test sh -c "trivy image hello-world:latest"
+        run: docker run --rm madpeteguy/jenkins-docker-slave-trivy:test sh -c "trivy image hello-world:latest"
   cleanup-artifacts:
     name: Cleanup artifacts
     runs-on: ubuntu-latest

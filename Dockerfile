@@ -2,7 +2,6 @@ FROM madpeteguy/jenkins-docker-slave-ssh:1.4.0
 
 LABEL maintainer="Mad Pete Guy"
 
-# Update and install git.
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.53.0 && \
@@ -12,7 +11,7 @@ RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/
 
 COPY imgdata /opt
 
-ENV TRIVY_CACHE_DIR=/trivy_cahe
+ENV TRIVY_CACHE_DIR=/trivy_cache
 
 VOLUME ["$TRIVY_CACHE_DIR"]
 
