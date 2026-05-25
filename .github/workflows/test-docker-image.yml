@@ -23,7 +23,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
       - name: Collect docker meta
         id: docker-metadata
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: madpeteguy/jenkins-docker-slave-trivy
       - name: Build docker image
